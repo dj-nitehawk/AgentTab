@@ -1,0 +1,54 @@
+<idea-plugin>
+    <id>dev.agenttab</id>
+    <vendor>AgentTab</vendor>
+
+    <description><![CDATA[
+        <b>AgentTab</b> starts Claude Code or Codex in a pinned editor tab when the IDE opens a project.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileEditorProvider implementation="dev.agenttab.AgentSessionEditorProvider"/>
+        <postStartupActivity implementation="dev.agenttab.OpenAgentOnStartupActivity"/>
+        <applicationConfigurable
+            parentId="tools"
+            instance="dev.agenttab.AgentTabConfigurable"
+            id="dev.agenttab.settings"
+            displayName="AgentTab"/>
+        <notificationGroup
+            id="AgentTab"
+            displayType="BALLOON"/>
+    </extensions>
+
+    <projectListeners>
+        <listener
+            class="dev.agenttab.AgentTabSelectionTracker"
+            topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+    </projectListeners>
+
+    <actions>
+        <action
+            id="dev.agenttab.OpenNewAgentTab"
+            class="dev.agenttab.OpenNewAgentTabAction"
+            text="Open New Agent Tab"
+            description="Open a new pinned Agent tab with a fresh agent session">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt A"/>
+        </action>
+        <action
+            id="dev.agenttab.SendCurrentFilePathToAgent"
+            class="dev.agenttab.SendCurrentFilePathToAgentAction"
+            text="Send Current File Path to Agent"
+            description="Send the current editor file path to the Agent tab prompt">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt P"/>
+        </action>
+        <action
+            id="dev.agenttab.SendCurrentFileLocationToAgent"
+            class="dev.agenttab.SendCurrentFileLocationToAgentAction"
+            text="Send Current File Location to Agent"
+            description="Send the current file path and line selection to the Agent tab prompt">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt L"/>
+        </action>
+    </actions>
+</idea-plugin>
