@@ -11,8 +11,8 @@ resource: README.md
 ## Setup
 
 - JDK **25** required (IntelliJ Platform 2026.3 is built for Java 25).
-- Use Gradle wrapper (`./gradlew`); distribution from `gradle/wrapper` (Gradle 9.6.0).
-- `claude` or `codex` must be on `PATH` (or set as the command in **Settings > Tools > AgentTab**); Terminal plugin must be enabled in the target IDE.
+- Use Gradle wrapper (`./gradlew`); version pinned in `gradle/wrapper/gradle-wrapper.properties`.
+- `claude`, `codex`, or `agy` must be on `PATH` (or set as the command in **Settings > Tools > AgentTab**); Terminal plugin must be enabled in the target IDE.
 - Local secrets: use env vars for signing/publish; do not put values in repo (see `.gitignore` for `.env`, `local.properties`).
 
 ## Build and run
@@ -36,18 +36,18 @@ Manual attention check: open project, wait for turn end with Agent tab unfocused
 ## CI and release
 
 - `.github/workflows/build.yml`: `workflow_dispatch`; JDK 25 Temurin; `buildPlugin` then `verifyPlugin`.
-- `.github/workflows/release.yml`: `workflow_dispatch` with patch/minor/major; bumps `pluginVersion` in `gradle.properties`; builds zip; commits, tags `v*`, GitHub Release with distribution zip.
+- `.github/workflows/release.yml`: `workflow_dispatch` with patch/minor/major; bumps `pluginVersion` in `gradle.properties`; runs `buildPlugin` (not `verifyPlugin`); commits and pushes `main` + tag `v*`, and creates a GitHub Release with the distribution zip.
 
 ## Dependencies (folded)
+
+Authoritative plugin versions live in `build.gradle.kts` and `settings.gradle.kts`; version/platform keys live in `gradle.properties` (see [Conventions](conventions.md#config-and-secrets)).
 
 | Item | Detail |
 | --- | --- |
 | Language/runtime | Kotlin JVM, Java 25 |
-| Build | Gradle wrapper + IntelliJ Platform Gradle Plugin `2.16.0` (`settings.gradle.kts`) |
-| Plugins | `org.jetbrains.kotlin.jvm` `2.4.0`, `org.jetbrains.intellij.platform`, `org.jetbrains.changelog` `2.2.1` |
+| Build | Gradle wrapper + IntelliJ Platform Gradle Plugin (`settings.gradle.kts`) + Kotlin JVM and Changelog plugins (`build.gradle.kts`) |
 | Platform | `rider(platformVersion)` with `useInstaller = false`; bundled `org.jetbrains.plugins.terminal` |
-| Config keys | `pluginGroup`, `pluginName`, `pluginVersion`, `pluginSinceBuild`, `platformVersion` in `gradle.properties` |
-| kotlin.stdlib.default.dependency | `false` (platform-provided) |
+| `kotlin.stdlib.default.dependency` | `false` in `gradle.properties` (platform-provided) |
 
 ## Sources
 - `README.md`

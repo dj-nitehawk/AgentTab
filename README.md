@@ -1,6 +1,6 @@
 # AgentTab
 
-JetBrains IDE plugin that opens a pinned **Agent** editor tab for the current project and starts a coding agent CLI in it: **Claude Code** (`claude`) or **Codex** (`codex`).
+JetBrains IDE plugin that opens a pinned **Agent** editor tab for the current project and starts a coding agent CLI in it: **Claude Code** (`claude`), **Codex** (`codex`), or **Antigravity** (`agy`).
 
 The plugin targets IntelliJ Platform `2026.3` (`since-build 263`) and uses the bundled JetBrains Terminal plugin.
 
@@ -8,7 +8,7 @@ The plugin targets IntelliJ Platform `2026.3` (`since-build 263`) and uses the b
 
 - JetBrains IDE based on IntelliJ Platform `2026.3` or newer
 - Bundled **Terminal** plugin enabled
-- `claude` or `codex` available on `PATH` (or a full path set in the plugin settings)
+- `claude`, `codex`, or `agy` available on `PATH` (or a full path set in the plugin settings)
 - `sh` and `curl` for attention notifications (Linux/macOS)
 - JDK 25 when building from source
 
@@ -18,8 +18,8 @@ The plugin targets IntelliJ Platform `2026.3` (`since-build 263`) and uses the b
 
 | Setting | Description |
 | --- | --- |
-| Agent | `Claude Code` (default) or `Codex`. Selects how attention notifications are wired. |
-| Command | Command to run. Empty means `claude` / `codex` from `PATH`. May be a full path and include extra flags, e.g. `claude --model opus`. Must start the selected agent. Wrapper scripts must forward their arguments (`"$@"`). |
+| Agent | `Claude Code` (default), `Codex`, or `Antigravity`. Selects how attention notifications are wired. |
+| Command | Command to run. Empty means `claude` / `codex` / `agy` from `PATH`. May be a full path and include extra flags, e.g. `claude --model opus`. Must start the selected agent. Wrapper scripts must forward their arguments (`"$@"`). |
 
 Changes apply to newly opened **Agent** tabs.
 
@@ -38,14 +38,15 @@ Rider 2026.3's new welcome screen is itself a project (`~/RiderProjects/RiderHom
 
 ## Attention notifications
 
-The plugin wires each agent's turn-complete signal through launch flags. It never writes to the agents' config files (`~/.claude`, `~/.codex`).
+The plugin wires each agent's attention signal through launch flags. It never writes to the agents' config files (`~/.claude`, `~/.codex`, `~/.gemini`).
 
 Flow:
 
-1. On launch, the plugin starts a loopback HTTP bridge and sets `AGENT_TAB_NOTIFY_URL` / `AGENT_TAB_NOTIFY_TOKEN` for the agent process.
+1. On launch, the plugin starts a loopback HTTP bridge and sets `AGENT_TAB_NOTIFY_URL`, `AGENT_TAB_NOTIFY_TOKEN`, and `AGENT_TAB_SESSION_ID` for the agent process.
 2. It appends a notify hook to the command:
    - **Claude Code:** `--settings '{"hooks":{"Stop":[...]}}'`. The `Stop` hook runs when Claude finishes responding. It is added alongside any `Stop` hooks you already have.
    - **Codex:** `-c 'notify=["sh","-c",...]'`. Codex passes the event JSON as an argument; only `agent-turn-complete` events notify. This overrides any `notify` program in `~/.codex/config.toml` for that session.
+   - **Antigravity (`agy`):** `--settings '{"title":{"type":"command","enabled":true,"command":...}}'`. `agy` ignores `hooks` in `settings.json`, so the plugin uses the session-only `title` command to POST state JSON on stdin to the bridge, which notifies on turn completion (`working` / `tool_use` -> `idle` / `error`) and approval prompts (`tool_confirmation_pending` or `reviewing`). This overrides any `title` command in `~/.gemini/antigravity-cli/settings.json` for that session.
 3. The hook runs an inline `curl` POST with header `x-agenttab-token` and always succeeds (fail-open, so it never blocks the agent).
 
 Notifications:

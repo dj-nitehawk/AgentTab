@@ -19,6 +19,7 @@ import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
 enum class AgentType(val displayName: String, val defaultCommand: String) {
     CLAUDE("Claude Code", "claude"),
     CODEX("Codex", "codex"),
+    AGY("Antigravity", "agy"),
 }
 
 @Service(Service.Level.APP)
@@ -53,7 +54,7 @@ class AgentTabConfigurable : BoundConfigurable("AgentTab") {
                 .columns(COLUMNS_LARGE)
                 .bindText({ settings.command.orEmpty() }, { settings.command = it.trim().ifEmpty { null } })
                 .comment(
-                    "Leave empty to run <code>claude</code> or <code>codex</code> from PATH. " +
+                    "Leave empty to run <code>claude</code>, <code>codex</code>, or <code>agy</code> from PATH. " +
                         "May include a full path and extra flags. Must match the selected agent, and any wrapper " +
                         "script must pass its arguments through (<code>\"$@\"</code>). Applies to newly opened Agent tabs."
                 )

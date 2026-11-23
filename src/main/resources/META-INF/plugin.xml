@@ -3,7 +3,7 @@
     <vendor>AgentTab</vendor>
 
     <description><![CDATA[
-        <b>AgentTab</b> starts Claude Code or Codex in a pinned editor tab when the IDE opens a project.
+        <b>AgentTab</b> starts Claude Code, Codex, or Antigravity in a pinned editor tab when the IDE opens a project.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

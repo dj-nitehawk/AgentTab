@@ -23,7 +23,7 @@ tags: [conventions, layout]
 
 ## Plugin registration
 
-- Declare extensions/actions/listeners only in `src/main/resources/META-INF/plugin.xml` (`projectListeners`: `AgentTabSelectionTracker` on `FileEditorManagerListener`).
+- Declare extensions, actions, and static project listeners in `src/main/resources/META-INF/plugin.xml` (`projectListeners`: `AgentTabSelectionTracker` on `FileEditorManagerListener`). Service-scoped listeners (`AgentAttentionNotificationBridge`) subscribe via `messageBus.connect(this)`.
 - File editor provider id: `agenttab.session`.
 - Action ids: `dev.agenttab.OpenNewAgentTab` (`Alt+A`), `dev.agenttab.SendCurrentFilePathToAgent`, `dev.agenttab.SendCurrentFileLocationToAgent`.
 - Platform deps: `com.intellij.modules.platform` + `org.jetbrains.plugins.terminal`.
@@ -36,7 +36,7 @@ tags: [conventions, layout]
 ## Config and secrets
 
 - Build/publish env names only (never commit values): `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`, `PUBLISH_TOKEN`, `CHANGE_NOTES`.
-- Runtime notify: `AGENT_TAB_NOTIFY_URL`, `AGENT_TAB_NOTIFY_TOKEN` passed as terminal process env (`ShellStartupOptions.envVariables`; hook reads them; multi-project safe because values are not baked into hook flags).
+- Runtime notify: `AGENT_TAB_NOTIFY_URL`, `AGENT_TAB_NOTIFY_TOKEN`, and `AGENT_TAB_SESSION_ID` passed as terminal process env (`ShellStartupOptions.envVariables`; hook reads them; multi-project and multi-tab safe because values are not baked into hook flags).
 - Version/platform knobs live in `gradle.properties` (`pluginGroup`, `pluginName`, `pluginVersion`, `pluginSinceBuild`, `platformVersion`).
 
 ## Sources

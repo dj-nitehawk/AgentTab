@@ -24,6 +24,7 @@ import org.jetbrains.plugins.terminal.ShellTerminalWidget
 import java.awt.BorderLayout
 import java.awt.datatransfer.StringSelection
 import java.beans.PropertyChangeListener
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -42,7 +43,13 @@ private const val NOTIFY_CURL =
     "curl -sS -X POST --noproxy \"*\" -H \"x-agenttab-token: \$AGENT_TAB_NOTIFY_TOKEN\" --max-time 3 " +
         "\"\$AGENT_TAB_NOTIFY_URL\" >/dev/null 2>&1 || true"
 
-/** Launch flags that wire the agent's turn-complete signal to the bridge, without touching its config files. */
+// POSTs agy's stdin state JSON to the attention bridge; never fails the agent.
+private const val AGY_STATE_CURL =
+    "curl -sS -X POST --noproxy \"*\" -H \"x-agenttab-token: \$AGENT_TAB_NOTIFY_TOKEN\" " +
+        "-H \"x-agenttab-session: \$AGENT_TAB_SESSION_ID\" --data-binary @- --max-time 3 " +
+        "\"\$AGENT_TAB_NOTIFY_URL\" >/dev/null 2>&1 || true"
+
+/** Launch flags that wire the agent's attention signal to the bridge, without touching its config files. */
 private fun notifyArgs(agentType: AgentType): String = when (agentType) {
     // Stop runs when the main agent finishes responding (not on user interrupt).
     AgentType.CLAUDE -> {
@@ -54,6 +61,11 @@ private fun notifyArgs(agentType: AgentType): String = when (agentType) {
         val script = "case \"\$1\" in *agent-turn-complete*) $NOTIFY_CURL;; esac"
         val notify = listOf("sh", "-c", script, "agenttab").joinToString(",", "notify=[", "]") { doubleQuote(it) }
         "-c ${shellQuote(notify)}"
+    }
+    // agy ignores hooks in settings.json; its session-only title command receives state JSON on stdin on every change.
+    AgentType.AGY -> {
+        val settings = """{"title":{"type":"command","enabled":true,"command":${doubleQuote(AGY_STATE_CURL)}}}"""
+        "--settings ${shellQuote(settings)}"
     }
 }
 
@@ -184,14 +196,23 @@ private class AgentSessionView(
 private object AgentLauncher {
 
     fun launch(project: Project, parent: Disposable, workingDirectory: String?): TerminalWidget {
-        val endpoint = AgentAttentionNotificationBridge.getInstance(project).start()
+        val bridge = AgentAttentionNotificationBridge.getInstance(project)
+        val endpoint = bridge.start()
+        val sessionId = UUID.randomUUID().toString()
+        Disposer.register(parent) { bridge.clearSessionState(sessionId) }
         // Run the agent as the terminal process (not typed into a shell), so the command is never echoed or saved
         // to shell history. -i loads the user's rc files (PATH, aliases). The tab closes when the agent exits.
         val shell = System.getenv("SHELL") ?: "/bin/sh"
         val options = ShellStartupOptions.Builder()
             .workingDirectory(workingDirectory)
             .shellCommand(listOf(shell, "-i", "-c", buildAgentCommand()))
-            .envVariables(mapOf("AGENT_TAB_NOTIFY_URL" to endpoint.url, "AGENT_TAB_NOTIFY_TOKEN" to endpoint.token))
+            .envVariables(
+                mapOf(
+                    "AGENT_TAB_NOTIFY_URL" to endpoint.url,
+                    "AGENT_TAB_NOTIFY_TOKEN" to endpoint.token,
+                    "AGENT_TAB_SESSION_ID" to sessionId,
+                ),
+            )
             .build()
         val widget = AgentTerminalRunner(project).startShellTerminalWidget(parent, options, true)
         JBTerminalWidget.asJediTermWidget(widget)?.let { AgentTerminalFileLinkHandler.install(project, workingDirectory, it, parent) }

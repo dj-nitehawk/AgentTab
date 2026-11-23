@@ -31,7 +31,7 @@ Preserve conventions, boundaries, and workflows from OKF. On conflict with sourc
 
 ### Before finishing
 
-Evaluate OKF when the change hits the update triggers listed in `.okf/gotchas.md` (Small shape has no `maintenance.md`). Default trigger inventory: architecture/boundaries; public APIs/routes/schemas/events/contracts; persistence/migrations; deps/runtime; build/run/test/lint/format/generate/deploy; testing strategy; security/auth; config/env/ports/ops; conventions/layout; gotchas. For this plugin that includes `plugin.xml` actions/hotkeys, notify/hook protocol, and CI/release.
+Evaluate OKF when the change hits the update triggers in [`.okf/gotchas.md`](.okf/gotchas.md#when-to-update-okf) (Small shape has no `maintenance.md`).
 
 Update OKF only when existing guidance becomes incorrect or incomplete, or the change introduces durable operational knowledge future agents would otherwise rediscover. A trigger requires evaluation, not an automatic addition.
 
@@ -43,6 +43,6 @@ Subject to project conventions in OKF/`conventions.md` and this file:
 
 - Focused, minimal changes; prefer existing patterns.
 - Do not use em or en dashes as prose punctuation. Use commas, parentheses, or separate sentences instead. Hyphens remain valid in compound words, bullets, code, commands, CLI flags, identifiers, paths, versions, ranges, quotations, and exact terms.
-- Do not hand-edit generated artifacts (Gradle/`build/` outputs, `.intellijPlatform/` caches); regenerate via project commands instead.
-- Agent notify hooks are generated in `AgentTabSession.kt` (`notifyArgs`) and passed as launch flags; never write to agent config dirs (`~/.claude`, `~/.codex`).
+- Do not hand-edit generated artifacts (Gradle/`build/` outputs, `.intellijPlatform/` caches); regenerate via project commands instead. If a path is not listed but is clearly generated output, leave it alone and regenerate.
+- Agent notify hooks are generated in `AgentTabSession.kt` (`notifyArgs`) and passed as launch flags; never write to agent config dirs (`~/.claude`, `~/.codex`, `~/.gemini`).
 - If behavior changes, run the smallest relevant command (`./gradlew buildPlugin`, `verifyPlugin`, or `runIde`). If not run, state the blocker.

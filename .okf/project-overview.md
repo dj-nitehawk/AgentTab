@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Project Overview
-description: JetBrains plugin that opens a pinned Agent terminal tab running Claude Code or Codex and wires attention notifications plus path hotkeys.
+description: JetBrains plugin that opens a pinned Agent terminal tab running Claude Code, Codex, or Antigravity (agy) and wires attention notifications plus path hotkeys.
 tags: [overview, layout, architecture]
 resource: README.md
 ---
@@ -10,13 +10,13 @@ resource: README.md
 
 ## Purpose
 
-**AgentTab** (`dev.agenttab`) is an IntelliJ Platform plugin that opens a pinned editor tab named **Agent**, starts the configured agent CLI (Claude Code or Codex) in the project base path, and integrates IDE notifications and path-sending actions.
+**AgentTab** (`dev.agenttab`) is an IntelliJ Platform plugin that opens a pinned editor tab named **Agent**, starts the configured agent CLI (Claude Code, Codex, or Antigravity) in the project base path, and integrates IDE notifications and path-sending actions.
 
 ## Scope
 
 - Single Gradle module; Kotlin sources under `src/main/kotlin/dev/agenttab/`.
 - Builds against **Rider** via IntelliJ Platform Gradle (`rider(...)`); platform version and since-build from `gradle.properties`.
-- Requires bundled **Terminal** plugin and `claude` or `codex` (on `PATH` or a configured command); `sh` + `curl` for notifications.
+- Requires bundled **Terminal** plugin and `claude`, `codex`, or `agy` (on `PATH` or a configured command); `sh` + `curl` for notifications.
 - MIT licensed. Version from `pluginVersion` in `gradle.properties`.
 
 ## Capabilities
@@ -25,8 +25,8 @@ resource: README.md
 | --- | --- |
 | Startup | `OpenAgentOnStartupActivity` opens/pins an `AgentSessionFile` tab without stealing focus |
 | Session | `AgentSessionEditor` hosts a local terminal; runs the agent command from settings plus notify flags as the terminal process |
-| Settings | App-level **Settings > Tools > AgentTab**: agent type (Claude Code / Codex) + optional command |
-| Attention | Launch-flag hook (Claude `--settings` Stop hook, Codex `-c notify`) POSTs on turn completion; IDE balloon + system notification |
+| Settings | App-level **Settings > Tools > AgentTab**: agent type (Claude Code / Codex / Antigravity) + optional command |
+| Attention | Launch-flag hook (Claude `--settings` Stop hook, Codex `-c notify`, agy `--settings` title state hook) POSTs on turn completion (and agy approval prompts); IDE balloon + system notification |
 | Path links | Terminal output paths like `src/file.ext:10` are clickable (must resolve under project base) |
 | Hotkeys | `Alt+A` new pinned Agent tab (fresh session; titles `Agent`, `Agent 2`, ... lowest free via `newAgentSessionFile`; send actions target the last selected Agent tab, tracked by `AgentTabSelectionTracker` project listener); `Alt+P` path; `Alt+L` path+line/selection formats (see README) |
 
@@ -35,8 +35,8 @@ resource: README.md
 | Path | Role |
 | --- | --- |
 | `src/main/kotlin/dev/agenttab/` | All plugin Kotlin sources (6 files) |
-| `src/main/resources/META-INF/plugin.xml` | Plugin id, deps, extensions, actions |
-| `src/main/resources/icons/` | Tab/action icons |
+| `src/main/resources/META-INF/plugin.xml` | Plugin id, deps, extensions, actions (plugin icons in same dir) |
+| `src/main/resources/icons/` | Tab icons (`agenttab.svg`, `agenttab_dark.svg`) |
 | `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties` | Build, platform, version |
 | `.github/workflows/` | CI build/verify and release |
 
@@ -45,13 +45,13 @@ resource: README.md
 - **Style:** IntelliJ plugin; project-level service + editor provider + startup activity + actions.
 - **Components:**
   - `AgentSessionFile` / `AgentSessionEditorProvider` / `AgentSessionEditor`: virtual file + terminal-backed editor (`AgentTabSession.kt`)
-  - `AgentLauncher` / `AgentTerminalRunner`: shell terminal; cwd = project base path; process is `$SHELL -i -c '<effective command> notifyArgs(agentType)'` with `AGENT_TAB_NOTIFY_*` in env; tab closes on clean (exit 0) agent exit
+  - `AgentLauncher` / `AgentTerminalRunner`: shell terminal; cwd = project base path; process is `$SHELL -i -c '<effective command> notifyArgs(agentType)'` with notify/session env vars (see [Conventions](conventions.md#config-and-secrets)); tab closes on clean (exit 0) agent exit
   - `AgentType` / `AgentTabSettings` / `AgentTabConfigurable`: app-level persisted settings (`agenttab.xml`) and settings page (`AgentTabSettings.kt`)
-  - `AgentAttentionNotificationBridge`: loopback HTTP `/notify` with `x-agenttab-token`; 1s debounce; suppress when Agent tab selected and IDE active
+  - `AgentAttentionNotificationBridge`: loopback HTTP `/notify` with `x-agenttab-token` (plus optional `x-agenttab-session` for per-tab agy state transitions); 1s debounce; suppresses when Agent tab selected and IDE active; auto-expires balloons on focus
   - `AgentTerminalFileLinkHandler`: hover/click file refs in terminal buffer
   - `OpenNewAgentTabAction` + `SendToAgentAction` subclasses (`AgentTabActions.kt`); both open tabs via `openAgentTab` (focused + pinned)
-- **Boundaries:** no separate modules; session disposable owns terminal/handlers. The notify server is shared by all Agent tabs and stops only on project close (service dispose).
-- **External:** Terminal plugin APIs; shells out to `claude` / `codex`; HTTP only to `127.0.0.1`. Never writes agent config files (`~/.claude`, `~/.codex`).
+- **Boundaries:** no separate modules; session disposable owns terminal/handlers and clears per-session agy state (`bridge.clearSessionState`). The notify server is shared by all Agent tabs and stops only on project close (service dispose).
+- **External:** Terminal plugin APIs; shells out to `claude` / `codex` / `agy`; HTTP only to `127.0.0.1`. Never writes agent config files (`~/.claude`, `~/.codex`, `~/.gemini`).
 
 ## Status
 
